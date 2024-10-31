@@ -43,6 +43,8 @@
   delegate_facts: true
   loop: "{{ groups['maas_pacemaker'] }}"
 
+
+
 - name: "Set pacemaker user password"
   ansible.builtin.user:
     name: "hacluster"

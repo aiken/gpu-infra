@@ -1,16 +1,29 @@
-# Define hosts for MAAS here
-
+```ini
+# 定义 maas_corosync 组，包含三个数据库节点
 [maas_corosync]
 
+server1 ansible_host=192.168.1.32 ansible_user=admin1 ansible_password=123456 ansible_become_pass=123456
+
+# 定义 maas_pacemaker 组，包含 maas_corosync 组的所有节点
 [maas_pacemaker:children]
-maas_corosync
+server1 ansible_host=192.168.1.32 ansible_user=admin1 ansible_password=123456 ansible_become_pass=123456
 
+# 定义 maas_postgres 组，包含三个数据库节点
 [maas_postgres]
+server1 ansible_host=192.168.1.32 ansible_user=admin1 ansible_password=123456 ansible_become_pass=123456
 
+# 定义 maas_postgres_proxy 组，包含三个区域控制器节点
 [maas_postgres_proxy]
+server1 ansible_host=192.168.1.32 ansible_user=admin1 ansible_password=123456 ansible_become_pass=123456
 
-[maas_proxy]
-
+# 定义 maas_region_controller 组，包含三个区域控制器节点
 [maas_region_controller]
+server1 ansible_host=192.168.1.32 ansible_user=admin1 ansible_password=123456 ansible_become_pass=123456
 
+# 定义 maas_rack_controller 组，包含一个区域控制器节点和两个机架控制器节点
 [maas_rack_controller]
+server1 ansible_host=192.168.1.32 ansible_user=admin1 ansible_password=123456 ansible_become_pass=123456
+
+# 定义 maas_proxy 组，包含一个代理节点
+[maas_proxy]
+server1 ansible_host=192.168.1.32 ansible_user=admin1 ansible_password=123456 ansible_become_pass=123456

@@ -1,11 +1,25 @@
 ---
-all:
+all:  # 顶级节点，表示所有主机的集合
   children:
-    maas_postgres:
-    maas_pacemaker:
+    maas_postgres:  # MAAS PostgreSQL 数据库服务器组
+      hosts:
+        192.168.1.32:  # 将所有服务指向同一台服务器
+    maas_pacemaker:  # MAAS Pacemaker 集群管理器组
+      hosts:
+        192.168.1.32:
       children:
-        maas_corosync:
-    maas_postgres_proxy:
-    maas_proxy:
-    maas_region_controller:
-    maas_rack_controller:
+        maas_corosync:  # MAAS Corosync 通信层组
+          hosts:
+            192.168.1.32:
+    maas_postgres_proxy:  # MAAS PostgreSQL 代理服务器组
+      hosts:
+        192.168.1.32:
+    maas_proxy:  # MAAS 代理服务器组
+      hosts:
+        192.168.1.32:
+    maas_region_controller:  # MAAS 区域控制器组
+      hosts:
+        192.168.1.32:
+    maas_rack_controller:  # MAAS 机架控制器组
+      hosts:
+        192.168.1.32:

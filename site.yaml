@@ -1,59 +1,60 @@
 ---
 
-# This playbook should deploy everything
+# 此剧本应部署所有内容
 
 - hosts: all
   tasks:
-    - name: "Ensure required variables have been defined"
+    - name: "确保必需的变量已定义"
       ansible.builtin.assert:
         quiet: true
-        fail_msg: "Required variable has not been defined"
+        fail_msg: "必需的变量未定义"
         that:
           - maas_url is defined
           - maas_version is defined
           - maas_installation_type is defined
           - maas_postgres_password is defined
 
-    - name: "Ensure maas_version is a version string"
+    - name: "确保 maas_version 是一个版本字符串"
       ansible.builtin.assert:
-        fail_msg: "'{{ maas_version }}' is not a valid version number"
+        fail_msg: "'{{ maas_version }}' 不是一个有效的版本号"
         that:
           - maas_version is regex('\d+\.\d+(\.\d+)?')
 
-    - name: "Ensure o11y can be enabled"
+    - name: "确保可观察性功能可以启用"
       ansible.builtin.assert:
         quiet: true
-        fail_msg: "Prometheus or Loki endpoints must be defined"
+        fail_msg: "必须定义 Prometheus 或 Loki 端点"
         that:
           - (o11y_prometheus_url|length > 0 or o11y_loki_url|length > 0)
       when: o11y_enable
 
-    - name: "Define proxy environment if proxies given"
+    - name: "如果提供了代理，则定义代理环境"
       ansible.builtin.set_fact:
         proxy_env: "{{ proxy_env | combine({'http_proxy' : http_proxy | d(omit)}) |
           combine({'https_proxy' : https_proxy | d(omit)}) }}"
 
-    - name: "Show proxy environment if in use"
+    - name: "如果使用代理环境，则显示代理环境"
       ansible.builtin.debug:
-        msg: "Playbooks using proxy settings: {{ proxy_env }}"
+        msg: "使用代理设置的剧本: {{ proxy_env }}"
       with_dict: "{{ proxy_env }}"
 
-    - name: "Ensure dist is up to date"
+    - name: "确保发行版是最新的"
       ansible.builtin.apt:
         upgrade: "dist"
         update_cache: true
         cache_valid_time: 3600
       become: true
 
-    - name: "Discover host architecture"
+    - name: "发现主机架构"
       ansible.builtin.command: dpkg --print-architecture
       register: arch_out
       changed_when: false
 
-    - name: "Set architechture facts"
+    - name: "设置架构事实"
       ansible.builtin.set_fact:
         ubuntu_arch: "{{ arch_out.stdout }}"
 
+# 针对 maas_postgres 主机的任务
 - hosts: maas_postgres
   roles:
     - role: maas_postgres
@@ -67,46 +68,49 @@
     - maas_ha_postgres
   environment: "{{ proxy_env }}"
 
-- hosts: maas_corosync
-  roles:
-    - role: maas_corosync
-  become: true
-  gather_facts: true
-  tags:
-    - maas_corosync
-    - maas_ha_postgres
-  environment: "{{ proxy_env }}"
+# 针对 maas_corosync 主机的任务
+# - hosts: maas_corosync
+#   roles:
+#     - role: maas_corosync
+#   become: true
+#   gather_facts: true
+#   tags:
+#     - maas_corosync
+#     - maas_ha_postgres
+#   environment: "{{ proxy_env }}"
 
-- hosts: maas_pacemaker
-  roles:
-    - role: maas_pacemaker
-  become: true
-  gather_facts: true
-  tags:
-    - maas_pacemaker
-    - maas_ha_postgres
-  environment: "{{ proxy_env }}"
+# 针对 maas_pacemaker 主机的任务
+# - hosts: maas_pacemaker
+#   roles:
+#     - role: maas_pacemaker
+#   become: true
+#   gather_facts: true
+#   tags:
+#     - maas_pacemaker
+#     - maas_ha_postgres
+#   environment: "{{ proxy_env }}"
 
-- hosts: maas_postgres_proxy
-  roles:
-    - role: maas_postgres_proxy
-  become: true
-  gather_facts: true
-  tags:
-    - maas_postgres_proxy
-  environment: "{{ proxy_env }}"
+# 针对 maas_postgres_proxy 主机的任务
+# - hosts: maas_postgres_proxy
+#   roles:
+#     - role: maas_postgres_proxy
+#   become: true
+#   gather_facts: true
+#   tags:
+#     - maas_postgres_proxy
+#   environment: "{{ proxy_env }}"
 
-# proxies are provisioned prior to rack controllers so the rack controller
-# will request to register to region controllers through the proxy
-- hosts: maas_proxy
-  roles:
-    - role: maas_proxy
-  become: true
-  gather_facts: true
-  tags:
-    - maas_proxy
-  environment: "{{ proxy_env }}"
+# 代理在机架控制器之前进行配置，因此机架控制器将通过代理请求注册到区域控制器
+# - hosts: maas_proxy
+#   roles:
+#     - role: maas_proxy
+#   become: true
+#   gather_facts: true
+#   tags:
+#     - maas_proxy
+#   environment: "{{ proxy_env }}"
 
+# 针对 maas_region_controller 主机的任务
 - hosts: maas_region_controller
   roles:
     - role: maas_region_controller
@@ -118,6 +122,7 @@
     - maas_controller
   environment: "{{ proxy_env }}"
 
+# 针对 maas_rack_controller 主机的任务
 - hosts: maas_rack_controller
   roles:
     - role: maas_rack_controller

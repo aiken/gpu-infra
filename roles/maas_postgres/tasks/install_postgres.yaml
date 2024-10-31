@@ -1,36 +1,41 @@
 ---
+# 安装PostgreSQL及其配置依赖项
 - name: "Install PostgreSQL and configuration dependencies"
   ansible.builtin.apt:
     name:
-      - "python3-psycopg2"
-      - "acl"
-      - "{{ maas_postgres_deb_name }}"
-    update_cache: true
-    cache_valid_time: 3600
-    state: "{{ 'present' if maas_postgres_action | lower == 'install' else maas_postgres_action }}"
-  register: postgres_installed
+      - "python3-psycopg2"  # PostgreSQL的Python库
+      - "acl"  # 访问控制列表工具
+      - "{{ maas_postgres_deb_name }}"  # PostgreSQL的Debian包名称
+    update_cache: true  # 更新包缓存
+    cache_valid_time: 3600  # 缓存有效时间为3600秒
+    state: "{{ 'present' if maas_postgres_action | lower == 'install' else maas_postgres_action }}"  # 根据操作状态安装或移除
+  register: postgres_installed  # 注册任务结果
 
+# 安装xinetd，仅在启用高可用Postgres时执行
 - name: "Install xinetd"
   ansible.builtin.apt:
     name: "xinetd"
     state: present
   when: maas_ha_postgres_enabled|bool
 
+# 生成复制密码，仅在未定义密码且启用高可用Postgres且Postgres安装有变更时执行
 - name: "Generate Replication Password"
   ansible.builtin.command: openssl rand -base64 14
   register: maas_postgres_replication_password_output
   when: (maas_postgres_replication_password is undefined) and (maas_ha_postgres_enabled|bool) and (postgres_installed.changed)
 
+# 保存复制密码，仅在启用高可用Postgres且Postgres安装有变更时执行
 - name: "Save Replication Password"
   ansible.builtin.set_fact:
     maas_postgres_replication_password: "{{ maas_postgres_replication_password_output.stdout }}"
     cacheable: true
-  run_once: true
-  delegate_to: "{{ item }}"
+  run_once: true  # 仅运行一次
+  delegate_to: "{{ item }}"  # 委派给每个Postgres节点
   delegate_facts: true
   loop: "{{ groups['maas_postgres'] }}"
   when: (maas_ha_postgres_enabled|bool) and (postgres_installed.changed)
 
+# 写入pg_hba.conf配置文件
 - name: "Write pg_hba.conf"
   ansible.builtin.template:
     src: "pg_hba.conf.j2"
@@ -39,10 +44,12 @@
     owner: postgres
     group: postgres
 
+# 写入postgresql.conf配置文件
 - name: "Write postgresql.conf"
   ansible.builtin.include_tasks:
     file: write_postgres_config.yaml
 
+# 创建MAAS Postgres用户
 - name: "Create MAAS Postgres User"
   community.postgresql.postgresql_user:
     name: "{{ maas_postgres_user }}"
@@ -52,6 +59,7 @@
   become: true
   become_user: postgres
 
+# 创建MAAS Postgres数据库
 - name: "Create MAAS Postgres Database"
   community.postgresql.postgresql_db:
     name: "{{ maas_postgres_database }}"
@@ -60,6 +68,7 @@
   become: true
   become_user: postgres
 
+# 写入pgsql_check脚本，仅在启用高可用Postgres时执行
 - name: "Write pgsql_check script"
   ansible.builtin.template:
     src: pgsql_check.j2
@@ -69,18 +78,21 @@
     group: root
   when: maas_ha_postgres_enabled|bool
 
+# 添加pgsql_check_v4服务条目，仅在定义了IPv4时执行
 - name: "Add pgsql_check_v4 service entry"
   ansible.builtin.lineinfile:
     dest: /etc/services
     line: "pgsql_check_v4  {{ maas_pgsql_check_port|default(23267) }}/tcp                       # postgres healthcheck"
   when: maas_postgres_ipv4 is defined
 
+# 添加pgsql_check_v6服务条目，仅在定义了IPv6时执行
 - name: "Add pgsql_check_v6 service entry"
   ansible.builtin.lineinfile:
     dest: /etc/services
     line: "pgsql_check_v6  {{ maas_pgsql_check_port|default(23267) }}/tcp                       # postgres healthcheck"
   when: maas_postgres_ipv6 is defined
 
+# 写入pgsql_check xinetd配置文件，仅在启用高可用Postgres时执行
 - name: "Write pgsql_check xinetd config file"
   ansible.builtin.template:
     src: pgsql_check_conf.j2

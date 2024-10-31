@@ -2,24 +2,29 @@
 - name: "Install Postgres"
   ansible.builtin.include_tasks:
     file: install_postgres.yaml
+  # 安装Postgres数据库
 
 - name: "Create Replication User"
   ansible.builtin.include_tasks:
     file: create_replication_user.yaml
   when: maas_ha_postgres_enabled and (inventory_hostname == groups["maas_postgres"][0])
+  # 创建复制用户，仅在启用高可用Postgres且当前主机是第一个Postgres节点时执行
 
 - name: "Configure Postgres as a secondary"
   ansible.builtin.include_tasks:
     file: configure_postgres_secondary.yaml
   when: maas_ha_postgres_enabled|bool
+  # 将Postgres配置为从节点，仅在启用高可用Postgres时执行
 
 - name: "Configure Postgres metrics agent"
   ansible.builtin.include_tasks:
     file: o11y_pg.yaml
   when: o11y_enable
+  # 配置Postgres监控代理，仅在启用监控时执行
 
 - name: "Setup firewall"
   ansible.builtin.include_role:
     name: maas_firewall
     tasks_from: setup_firewall_rules
   when: ('maas_region_controller' not in group_names) and ('maas_pacemaker' not in group_names) and ( enable_firewall )
+  # 设置防火墙规则，仅在当前主机不属于maas_region_controller和maas_pacemaker组且启用防火墙时执行

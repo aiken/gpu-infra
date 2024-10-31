@@ -3,24 +3,24 @@
   ansible.builtin.systemd:
     name: "postgresql@{{ maas_postgres_version_number }}-main.service"
     state: stopped
-    no_block: false # wait for clean stop
+    no_block: false # 等待Postgres服务干净地停止
 
 - name: "Start Postgres Service To Load New Configuration"
   ansible.builtin.systemd:
     name: "postgresql@{{ maas_postgres_version_number }}-main.service"
     enabled: true
     state: started
-    no_block: false
+    no_block: false # 启动Postgres服务以加载新配置
 
 - name: "Restart xinetd"
   ansible.builtin.systemd:
     name: "xinetd.service"
     state: restarted
-    enabled: true
+    enabled: true # 重启xinetd服务并确保其启用
 
 - name: "Start Postgres metrics agent"
   ansible.builtin.systemd:
     name: postgres_exporter
     enabled: true
     state: "restarted"
-    daemon-reload: true
+    daemon-reload: true # 重启Postgres监控代理并重新加载守护进程
