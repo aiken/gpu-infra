@@ -1,0 +1,61 @@
+---
+- hosts: all
+  become: true
+  tasks:
+    - name: include prereqs
+      ansible.builtin.include_tasks: 
+        file: prereq.yml
+
+    - name: download k3s binary
+      ansible.builtin.get_url:
+        url: https://github.com/k3s-io/k3s/releases/download/{{ k3s_version }}/k3s
+        checksum: sha256:https://github.com/k3s-io/k3s/releases/download/{{ k3s_version }}/sha256sum-amd64.txt
+        dest: /usr/local/bin/k3s
+        owner: root
+        group: root
+        mode: 0755
+
+    - name: insert systemd file
+      ansible.builtin.template:
+        src: files/k3s.service
+        dest: /etc/systemd/system/k3s.service
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: enable service
+      ansible.builtin.systemd:
+        name: k3s
+        daemon_reload: yes
+        state: restarted
+        enabled: yes   
+
+    - name: install awx operator
+      block:
+        - name: "Download operator - AWX {{ awx_operator_version }}"
+          ansible.builtin.get_url:
+            url: "https://raw.githubusercontent.com/ansible/awx-operator/{{ awx_operator_version }}/deploy/awx-operator.yaml"
+            dest: /tmp/awx-operator.yml
+            mode: 0600
+        
+        - name: "Apply operator - AWX - {{ awx_operator_version }}"
+          community.kubernetes.k8s:
+            namespace: default
+            state: present
+            src: /tmp/awx-operator.yml
+            kubeconfig: /etc/rancher/k3s/k3s.yaml
+
+    - name: Apply awx kubernetes config file
+      community.kubernetes.k8s:
+        state: present
+        template: templates/awx.yml.j2
+        kubeconfig: /etc/rancher/k3s/k3s.yaml
+
+    - name: Print message
+      ansible.builtin.debug:
+        msg: 
+          - "Please wait 5-10 minutes until AWX is up and running"
+          - "Hostname: {{ tower_hostname }} ( remember to fix your own dns/hosts file )"
+          - "Username: {{ awx_admin_user }}"
+          - "Password: {{ awx_admin_password }}"
+...

@@ -1,0 +1,58 @@
+---
+# Influenced from https://github.com/k3s-io/k3s-ansible.
+- name: install prerequisite rpm packages
+  ansible.builtin.yum:
+    name:
+      - container-selinux
+      - selinux-policy-base
+    state: present
+
+- name: install k3s_selinux package
+  ansible.builtin.yum:
+    name:
+      - "{{ k3s_selinux_url }}"
+    disable_gpg_check: true #k3s-selinux does not currently provide gpg signing
+    state: present
+
+- name: /etc/modules-load.d/br_netfilter
+  ansible.builtin.copy:
+    content: "br_netfilter"
+    dest: /etc/modules-load.d/br_netfilter.conf
+    mode: "u=rw,g=,o="
+
+- name: enable br_netfilter
+  community.general.modprobe:
+    name: br_netfilter
+    state: present
+
+- name: Enable sysctl items
+  ansible.posix.sysctl:
+    name: "{{ item }}"
+    value: "1"
+    state: present
+    reload: yes
+  loop:
+    - net.ipv4.ip_forward
+    - net.ipv6.conf.all.forwarding
+    - net.bridge.bridge-nf-call-iptables
+    - net.bridge.bridge-nf-call-ip6tables
+
+- name: Add /usr/local/bin to sudo secure_path
+  ansible.builtin.lineinfile:
+    line: 'Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin'
+    regexp: "Defaults(\\s)*secure_path(\\s)*="
+    state: present
+    insertafter: EOF
+    path: /etc/sudoers
+    validate: 'visudo -cf %s'
+
+- name: Install pip
+  ansible.builtin.yum:
+    name: python3-pip
+    state: present
+
+- name: Add required pip packages
+  ansible.builtin.pip:
+    name: openshift
+    state: present
+...

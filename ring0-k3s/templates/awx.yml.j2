@@ -1,0 +1,28 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: awx
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: awx-admin-password
+  namespace: awx
+stringData:
+  password: {{ awx_admin_password }}
+---
+apiVersion: awx.ansible.com/v1beta1
+kind: AWX
+metadata:
+  name: awx
+  namespace: awx
+spec:
+  tower_ingress_type: Ingress
+  tower_hostname: {{ tower_hostname }}
+  tower_admin_password_secret: awx-admin-password
+  tower_admin_user: {{ awx_admin_user }}
+  tower_image: quay.io/ansible/awx:{{ awx_version }}
+  tower_ee_images:
+    - name: AWX EE {{ awx_ee_version }}
+      image: quay.io/ansible/awx-ee:{{ awx_ee_version }}
