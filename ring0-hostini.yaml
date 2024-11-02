@@ -1,0 +1,45 @@
+- hosts: all
+  remote_user: root
+
+  tasks:
+  - name: Install Docker using snap
+    apt:
+      name: snapd
+      state: present
+
+  - name: Install Docker
+    snap:
+      name: docker
+      state: present
+
+  - name: Backup and edit daemon.json
+    shell: |
+      sudo cp /var/snap/docker/current/config/daemon.json /var/snap/docker/current/config/daemon.json.bak
+
+      echo '{
+        "registry-mirrors": ["https://dh.lanrunjh.com"]
+      }' | sudo tee /var/snap/docker/current/config/daemon.json
+
+      sudo snap restart docker
+
+      - name: Backup original sources.list
+        copy:
+          src: /etc/apt/sources.list
+          dest: /etc/apt/sources.list.bak
+          remote_src: yes
+        become: yes
+
+      - name: Replace with Aliyun mirror sources
+        copy:
+          content: |
+            deb http://mirrors.aliyun.com/ubuntu/ jammy main restricted universe multiverse
+            deb http://mirrors.aliyun.com/ubuntu/ jammy-security main restricted universe multiverse
+            deb http://mirrors.aliyun.com/ubuntu/ jammy-updates main restricted universe multiverse
+            deb http://mirrors.aliyun.com/ubuntu/ jammy-backports main restricted universe multiverse
+          dest: /etc/apt/sources.list
+        become: yes
+
+      - name: Update package lists
+        apt:
+          update_cache: yes
+        become: yes
