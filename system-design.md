@@ -15,33 +15,33 @@
 管理服务器集群包含以下核心服务:
 
 1. 基础环境的准备 (https://github.com/aiken/gpu-infra)
-   1. 本地ansible环境准备， 考虑使用vagrant 初始化本地环境
-   2. 使用ansible 部署ring0设备的的系统环境
-      1. ubuntu替换国内源
-      2. docker安装和替换registry
-      3.   
+   1. 本地 ansible 环境准备，考虑使用 vagrant 初始化本地环境
+   2. 使用 ansible 部署 ring0 设备的系统环境
+      1. ubuntu 替换国内源
+      2. docker 安装和替换 registry
 
 2. **MAAS (Metal as a Service)**
    - 提供裸机服务器的自动化部署
    - 管理操作系统镜像和网络启动
 
-3. **Ansible & AWX**
+3. **Kubernetes for ring0 service**
+   - 容器编排和管理
+   - GPU 资源调度
+
+4. **Ansible & AWX**
    - Ansible: 自动化配置管理工具
    - AWX: Ansible 的 Web UI 管理界面
 
-4. **JumpServer**
+5. **JumpServer**
    - 堡垒机系统
    - 统一管理服务器访问权限
    - 审计系统操作记录
 
-5. **夜莺监控系统**
+6. **夜莺监控系统**
    - 集群监控和告警
    - 性能指标收集和展示
 
-6. **Kubernetes for GPU Cluster**
-   - 容器编排和管理
-   - GPU 资源调度
-7. **Docker 环境安装部署**
+
 
 
 
